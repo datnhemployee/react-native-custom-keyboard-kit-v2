@@ -11,11 +11,8 @@ npm install react-native-custom-keyboard-kit-v2
 ## Usage
 
 ```js
-import CustomKeyboardKitV2 from "react-native-custom-keyboard-kit-v2";
 
-// ...
-
-const result = await CustomKeyboardKitV2.multiply(3, 7);
+// Updating
 ```
 
 ## Contributing
