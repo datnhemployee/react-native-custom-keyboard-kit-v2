@@ -4,100 +4,24 @@ import helpers from './helpers';
 import constants from './constants';
 
 const { isSupported, getComponentId } = helpers;
-const { APP_KEYBOARD_NAME, LIST_KEYBOARDS } = constants;
+const { LIST_KEYBOARDS } = constants;
 
 /**
- * @description This class shall be registered as an application via function `KeyboardKit.register`.
- * Then the app run parallel with your registerd application in your `index.js` which 
- * stays at React Native root folder.
  * 
- * @see register
  */
-class KeyboardKit extends React.Component {
-  render() {
-    if (!isSupported()) return null;
+class Keyboard extends React.PureComponent {
+  static TYPE = 'AbstractKeyboard';
 
-    const {
-      /** I currently have no idea about this `this.props.tag` yet */
-      tag,
-      /** It SHALL be static property `TYPE` of your custom class which extends class `Keyboard`. 
-       * @see LIST_KEYBOARDS
-       */
-      keyboardType
-    } = this.props;
-
-    const getKeyboardExtension = LIST_KEYBOARDS[keyboardType]?.factory;
-    if (!getKeyboardExtension) {
-      console.warn(
-        `KeyboardKit WARNING:`,
-        `There is no keyboard type ${keyboardType}.`,
-        `Please register first!`
-      );
-      return null;
+  constructor(props) {
+    super(props);
+    if (LIST_KEYBOARDS[Keyboard.TYPE]) {
+      LIST_KEYBOARDS[Keyboard.TYPE].tag = props.tag;
     }
-
-    const KeyboardExtension = getKeyboardExtension();
-    return <KeyboardExtension tag={tag} />;
   }
-}
 
-
-// ==================== KeyboardKit ====================
-/**
- * 
- * Notes:
- * + Please call function `KeyboardKit.register` before `AppRegistry.registerComponent`
- * in your `index.js`
-s * 
- * @description Register another app which has `constants.APP_KEYBOARD_NAME` then run
- * the app paralleled with your React Native App.
- * 
- * @param {array<object>} listKeyboards contains class `KeyboardKit.Keyboard` extensions.
- * @returns {void} Nothing is returned!
- * 
- * 
- * Example:
- * ``` 
- * // index.js at React Native root folder
- * 
- * import Keyboard1 from './Keyboard1';
- * import Keyboard2 from './Keyboard2';
- * import KeyboardKit from './KeyboardKit';
- * 
- * import { AppRegistry } from 'react-native';
- * import App from './App';
- * import { name as appName } from './app.json';
- * 
- * 
- * const { register } = KeyboardKit;
- * 
- * 
- * register([ // Please add this function before registering your app.
- *    Keyboard1,
- *    Keyboard2,
- * ])
- * 
- * AppRegistry.registerComponent(appName, () => App);
- * ```
- * @see https://reactnative.dev/docs/appregistry
- */
-function register(listKeyboards = []) {
-  if (!isSupported() || typeof listKeyboards !== 'object' || listKeyboards?.length) return;
-
-  const { AppRegistry } = require('react-native');
-  AppRegistry.registerComponent(APP_KEYBOARD_NAME, () => KeyboardKit);
-
-  listKeyboards.forEach((keyboardExtension) => {
-
-    const TYPE = keyboardExtension?.TYPE;
-
-    if (!TYPE) return;
-
-    LIST_KEYBOARDS[TYPE] = {
-      factory: () => keyboardExtension,
-      tag: null,
-    };
-  })
+  render() {
+    return null
+  }
 }
 
 
@@ -220,22 +144,6 @@ const attach = async (
 };
 
 /**
- * 
- */
-class Keyboard extends React.PureComponent {
-  static TYPE = 'AbstractKeyboard';
-
-  constructor(props) {
-    super(props);
-    LIST_KEYBOARDS[Keyboard.TYPE].tag = props.tag;
-  }
-
-  render() {
-    return null
-  }
-}
-
-/**
  * Detach the keyboard from the `TextInput`. 
  * 
  * Note:
@@ -257,31 +165,6 @@ const detach = (keyboardType) => {
 };
 
 /**
- * Insert the `text` to your `TextInput`.
- * 
- * @param {string} keyboardType is `KeyboardKit.Keyboard`-extension-static-property `TYPE`.
- * @param {string} text shall be inserted to appropriate position.
- * @param {boolean} isBackSpace shall insert a `backSpace` to your `TextInput`.
- * @returns Nothing is returned!
- * 
- * @see Keyboard
- */
-const insert = (keyboardType, text = '', isBackSpace = false) => {
-  if (!isSupported() || !keyboardType) return;
-
-  const keyboardTag = LIST_KEYBOARDS[keyboardType]?.tag;
-  if (!keyboardTag) return;
-
-  const { NativeKeyboardKit } = NativeModules;
-  if (isBackSpace) {
-    NativeKeyboardKit.backSpace(keyboardTag)
-    return;
-  }
-
-  NativeKeyboardKit.insert(keyboardTag, text);
-};
-
-/**
  * Hide the `KeyboardKit.Keyboard` when you want to do it by yourself.
  * 
  * @param {string} keyboardType is `KeyboardKit.Keyboard`-extension-static-property `TYPE`.
@@ -299,55 +182,11 @@ const hide = (keyboardType) => {
   NativeKeyboardKit.hide(keyboardTag);
 };
 
-/**
- * Submit the value of your `TextInput`.
- * 
- * @param {string} keyboardType is `KeyboardKit.Keyboard`-extension-static-property `TYPE`.
- * @returns Nothing is returned!
- * 
- * @see Keyboard
- */
-const submit = (keyboardType) => {
-  if (!isSupported() || !keyboardType) return;
-
-  const keyboardTag = LIST_KEYBOARDS[keyboardType]?.tag;
-  if (!keyboardTag) return;
-
-  const { NativeKeyboardKit } = NativeModules;
-  NativeKeyboardKit.submit(keyboardTag);
-};
-
-/**
- * 
- */
-const EVENT_KEYBOARD_DID_SHOW = 'CustomKeyboardDidShow';
-const EVENT_KEYBOARD_DID_HIDE = 'CustomKeyboardDidHide';
-
-/**
- * 
- */
-const getKeyboardSpacerEmitter = () => {
-  const { NativeEventEmitter } = require('react-native');
-  const eventEmitter = new NativeEventEmitter(NativeKeyboardKit);
-  return eventEmitter;
-}
 
 
-export default KeyboardKit;
+export default Keyboard;
 export {
-  Keyboard,
-
-  register,
-
   attach,
   detach,
-
-  insert,
-  backSpace,
-  submit,
-  hide,
-
-  EVENT_KEYBOARD_DID_SHOW,
-  EVENT_KEYBOARD_DID_HIDE,
-  getKeyboardSpacerEmitter,
-};
+  hide
+}
