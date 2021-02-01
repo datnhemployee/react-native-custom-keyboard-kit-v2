@@ -17,7 +17,7 @@ import androidx.annotation.RequiresApi;
 
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactRootView;
-import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -196,7 +196,7 @@ public class CustomKeyboardKitV2Module extends ReactContextBaseJavaModule {
 
     Bundle bundle = new Bundle();
     bundle.putInt("tag", keyboardType);
-    bundle.putString("type", type);
+    bundle.putString("keyboardType", type);
 
     this.rootView.startReactApplication(
       ((ReactApplication) activity.getApplication())
@@ -228,12 +228,12 @@ public class CustomKeyboardKitV2Module extends ReactContextBaseJavaModule {
 
   @RequiresApi(Build.VERSION_CODES.DONUT)
   @ReactMethod
-  public void install(
+  public void attach(
     final int tag,
     final String type,
     final int tagModal,
     final int tagView,
-    Callback callback
+    Promise promise
   ) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
@@ -242,7 +242,7 @@ public class CustomKeyboardKitV2Module extends ReactContextBaseJavaModule {
         final ReactEditText editText = getEditById(tag);
         final ReactTextInputManager manager = getTextInputManager(tag);
 
-        if (editText == null) { return; }
+        if (editText == null) { promise.reject("Error", "Cannot attach"); return; }
 
         manager.showKeyboardOnFocus(editText,false);
         editText.setTag(
@@ -304,8 +304,6 @@ public class CustomKeyboardKitV2Module extends ReactContextBaseJavaModule {
                 currentView.getWindowToken(),
                 0
               );
-
-
 //                                }
 //                            });
             } else {
@@ -361,32 +359,40 @@ public class CustomKeyboardKitV2Module extends ReactContextBaseJavaModule {
           }
         });
       }
-
     });
+    promise.resolve(null);
   }
 
   @RequiresApi(Build.VERSION_CODES.DONUT)
   @ReactMethod
-  public void uninstall(final int tag) {
+  public void detach(
+    final int tag,
+    Promise promise
+  ) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         final ReactEditText editText = getEditById(tag);
-        if (editText == null) { return; }
+        if (editText == null) { promise.reject("Error", "Cannot detach"); return; }
 
         editText.setTag(TAG_ID, null);
+        promise.resolve("success");
       }
     });
   }
 
   @RequiresApi(Build.VERSION_CODES.DONUT)
   @ReactMethod
-  public void insertText(final int tag, final String text) {
+  public void insert(
+    final int tag,
+    final String text,
+    Promise promise
+  ) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         final ReactEditText editText = getEditById(tag);
-        if (editText == null) { return; }
+        if (editText == null) { promise.reject("Error", "Cannot insert"); return; }
 
         int start = Math.max(editText.getSelectionStart(),0);
         int end = Math.max(editText.getSelectionEnd(),0);
@@ -398,62 +404,79 @@ public class CustomKeyboardKitV2Module extends ReactContextBaseJavaModule {
           0,
           text.length()
         );
+        promise.resolve("success");
       }
     });
   }
 
   @RequiresApi(Build.VERSION_CODES.DONUT)
   @ReactMethod
-  public void submit(final int tag) {
+  public void submit(
+    final int tag,
+    Promise promise
+  ) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         final ReactEditText editText = getEditById(tag);
 
-        if (editText == null) { return; }
+        if (editText == null) { promise.reject("Error", "Cannot submit"); return; }
+
+        View keyboard = (View) editText.getTag(TAG_ID);
+        if (keyboard.getParent() != null) {
+          ((ViewGroup) keyboard.getParent()).removeView(keyboard);
+        }
 
         ReactContext context = UIManagerHelper.getReactContext(editText);
         EventDispatcher eventDispatcher = getEventDispatcher(context, editText);
         eventDispatcher.dispatchEvent(
           new SubmitEvent(
             editText.getId(), editText.getText().toString()));
-
+        promise.resolve("success");
       }
     });
   }
 
   @RequiresApi(Build.VERSION_CODES.DONUT)
   @ReactMethod
-  public void backSpace(final int tag) {
+  public void backSpace(
+    final int tag,
+    Promise promise
+  ) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         final ReactEditText editText = getEditById(tag);
 
-        if (editText == null) { return; }
+        if (editText == null) { promise.reject("Error", "Cannot backSpace"); return; }
 
         int start = Math.max(editText.getSelectionStart(), 0);
         int  end = Math.max(editText.getSelectionEnd(), 0);
 
         if (start != end) { editText.getText().delete(start,end); }
         else if (start > 0) { editText.getText().delete(start - 1, end); }
+        promise.resolve("success");
       }
     });
   }
 
   @RequiresApi(Build.VERSION_CODES.DONUT)
   @ReactMethod
-  public void hideKeyboard(final int tag) {
+  public void hide(
+    final int tag,
+    Promise promise
+  ) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         final ReactEditText editText = getEditById(tag);
-        if (editText == null) { return; }
+        if (editText == null) { promise.reject("Error", "Cannot hide");  return; }
 
         View keyboard = (View) editText.getTag(TAG_ID);
         if (keyboard.getParent() != null) {
           ((ViewGroup) keyboard.getParent()).removeView(keyboard);
         }
+        promise.resolve("success");
       }
     });
   }

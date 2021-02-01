@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Text, NativeModules } from 'react-native';
 import helper from './helpers';
 import constants from './constants';
 
@@ -8,15 +8,15 @@ const { LIST_KEYBOARDS } = constants;
 
 /**
  * Insert the `text` to your `TextInput`.
- * 
+ *
  * @param {string} keyboardType is `KeyboardKit.Keyboard`-extension-static-property `TYPE`.
  * @param {string} text shall be inserted to appropriate position.
  * @param {boolean} isBackSpace shall insert a `backSpace` to your `TextInput`.
  * @returns Nothing is returned!
- * 
+ *
  * @see Keyboard
  */
-const insert = (keyboardType, text = '', isBackSpace = false) => {
+const insert = async (keyboardType, text = '', isBackSpace = false) => {
   if (!isSupported() || !keyboardType) return;
 
   const keyboardTag = LIST_KEYBOARDS[keyboardType]?.tag;
@@ -24,38 +24,37 @@ const insert = (keyboardType, text = '', isBackSpace = false) => {
 
   const { NativeKeyboardKit } = NativeModules;
   if (isBackSpace) {
-    NativeKeyboardKit.backSpace(keyboardTag)
+    await NativeKeyboardKit.backSpace(keyboardTag);
     return;
   }
 
-  NativeKeyboardKit.insert(keyboardTag, text);
+  await NativeKeyboardKit.insert(keyboardTag, text);
 };
-
 
 /**
  * Submit the value of your `TextInput`.
- * 
+ *
  * @param {string} keyboardType is `KeyboardKit.Keyboard`-extension-static-property `TYPE`.
  * @returns Nothing is returned!
- * 
+ *
  * @see Keyboard
  */
-const submit = (keyboardType) => {
+const submit = async (keyboardType) => {
   if (!isSupported() || !keyboardType) return;
 
   const keyboardTag = LIST_KEYBOARDS[keyboardType]?.tag;
   if (!keyboardTag) return;
 
   const { NativeKeyboardKit } = NativeModules;
-  NativeKeyboardKit.submit(keyboardTag);
+  await NativeKeyboardKit.submit(keyboardTag);
 };
 
 let interval = false;
 class Button extends React.PureComponent {
-  getStyleTouch = () => null
-  getStyleText = () => null
+  getStyleTouch = () => null;
+  getStyleText = () => null;
 
-  onLongPress = () => {
+  onLongPress = async () => {
     const { isBackSpace, disabled } = this.props;
 
     if (disabled) return;
@@ -65,49 +64,50 @@ class Button extends React.PureComponent {
       interval = setInterval(this.onPress, 100);
       return;
     }
-    this.onPress();
-  }
+    await this.onPress();
+  };
 
   onPressOut = () => interval && clearInterval(interval);
 
-  onPress = () => {
-    const {
-      isSubmit,
-      keyboardType,
-      value,
-      isBackSpace,
-      disabled,
-    } = this.props
+  onPress = async () => {
+    const { isSubmit, keyboardType, value, isBackSpace, disabled } = this.props;
 
     if (disabled) return;
 
     if (isSubmit) {
-      submit(keyboardType);
+      await submit(keyboardType);
       return;
     }
 
-    insert(keyboardType, value, isBackSpace)
-  }
+    await insert(keyboardType, value, isBackSpace);
+  };
 
   render() {
     const { label, style, styleText } = this.props;
 
-    const styleTouch = this.getStyleText();
-    const styleText = this.getStyleText();
     return (
       <TouchableOpacity
-        style={[styleTouch, style]}
+        style={[this.getStyleTouch(), style]}
         onLongPress={this.onLongPress}
         onPressOut={this.onPressOut}
-        onPress={this.onPress} >
-        <Text style={styleText}>{label}</Text>
+        onPress={this.onPress}
+      >
+        <Text style={[this.getStyleText(), styleText]}>{label}</Text>
       </TouchableOpacity>
     );
   }
 }
 
+Button.defaultProps = {
+  keyboardType: '',
+  value: '',
+  label: '',
+  isSubmit: false,
+  isBackSpace: false,
+  disabled: false,
+  // styleText: {},
+  style: {},
+};
+
 export default Button;
-export {
-  insert,
-  submit
-}
+export { insert, submit };

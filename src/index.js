@@ -1,15 +1,18 @@
 import React from 'react';
 import helpers from './helpers';
 import constants from './constants';
+import usecase from './usecase/NumericTextInput';
+import { attach, detach, hide } from './Keyboard';
+import { AppRegistry } from 'react-native';
 
 const { isSupported } = helpers;
 const { APP_KEYBOARD_NAME, LIST_KEYBOARDS } = constants;
 
 /**
  * @description This class shall be registered as an application via function `KeyboardKit.register`.
- * Then the app run parallel with your registerd application in your `index.js` which 
+ * Then the app run parallel with your registerd application in your `index.js` which
  * stays at React Native root folder.
- * 
+ *
  * @see register
  */
 class KeyboardKit extends React.Component {
@@ -19,10 +22,10 @@ class KeyboardKit extends React.Component {
     const {
       /** I currently have no idea about this `this.props.tag` yet */
       tag,
-      /** It SHALL be static property `TYPE` of your custom class which extends class `Keyboard`. 
+      /** It SHALL be static property `TYPE` of your custom class which extends class `Keyboard`.
        * @see LIST_KEYBOARDS
        */
-      keyboardType
+      keyboardType,
     } = this.props;
 
     const getKeyboardExtension = LIST_KEYBOARDS[keyboardType]?.factory;
@@ -40,8 +43,6 @@ class KeyboardKit extends React.Component {
   }
 }
 
-
-// ==================== KeyboardKit ====================
 /**
  * 
  * Notes:
@@ -51,7 +52,7 @@ s *
  * @description Register another app which has `constants.APP_KEYBOARD_NAME` then run
  * the app paralleled with your React Native App.
  * 
- * @param {array<object>} listKeyboards contains class `KeyboardKit.Keyboard` extensions.
+ * @param {array} listKeyboards contains class `KeyboardKit.Keyboard` extensions.
  * @returns {void} Nothing is returned!
  * 
  * 
@@ -81,27 +82,25 @@ s *
  * @see https://reactnative.dev/docs/appregistry
  */
 function register(listKeyboards = []) {
-  if (!isSupported() || typeof listKeyboards !== 'object' || listKeyboards?.length) return;
-
-  const { AppRegistry } = require('react-native');
-  AppRegistry.registerComponent(APP_KEYBOARD_NAME, () => KeyboardKit);
+  if (
+    !isSupported() ||
+    typeof listKeyboards !== 'object' ||
+    !listKeyboards?.length
+  ) {
+    return;
+  }
 
   listKeyboards.forEach((keyboardExtension) => {
-
     const TYPE = keyboardExtension?.TYPE;
-
     if (!TYPE) return;
 
     LIST_KEYBOARDS[TYPE] = {
       factory: () => keyboardExtension,
       tag: null,
     };
-  })
+  });
 }
 
-export default KeyboardKit;
-export {
-  Keyboard,
+AppRegistry.registerComponent(APP_KEYBOARD_NAME, () => KeyboardKit);
 
-  register,
-};
+export default { register, usecase, attach, detach, hide };
